@@ -7,18 +7,31 @@ LABEL maintainer=""
 # Set environment variables
 ENV PYTHONUNBUFFERED 1
 
-# Install Chrome
+# Install system dependencies
 RUN apt-get update && \
-    apt-get install -y wget unzip gnupg && \
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' && \
-    apt-get update && \
-    apt-get install -y google-chrome-stable
+    apt-get install -y wget unzip gnupg libglib2.0-0 && \
+    apt-get clean && \
+    apt-get install -y \
+    libnss3 \
+    libnss3-tools \
+    libnss3-dev \
+    libnspr4 \
+    libnspr4-dev \
+    libxcb1 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install ChromeDriver
-RUN wget https://chromedriver.storage.googleapis.com/94.0.4606.41/chromedriver_linux64.zip && \
-    unzip chromedriver_linux64.zip && \
-    mv chromedriver /usr/bin/chromedriver && \
+
+# Install specific version of Google Chrome
+RUN wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/116.0.5845.96/linux64/chrome-linux64.zip && \
+    unzip chrome-linux64.zip && \
+    mkdir -p /opt/google/chrome && \
+    mv chrome-linux64 /opt/google/chrome && \
+    ln -s /opt/google/chrome/chrome /usr/bin/google-chrome
+
+# Install compatible ChromeDriver
+RUN wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/116.0.5845.96/linux64/chromedriver-linux64.zip && \
+    unzip chromedriver-linux64.zip && \
+    mv chromedriver-linux64/chromedriver /usr/bin/chromedriver && \
     chown root:root /usr/bin/chromedriver && \
     chmod +x /usr/bin/chromedriver
 
