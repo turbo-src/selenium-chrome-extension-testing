@@ -7,12 +7,6 @@ LABEL maintainer=""
 # Set environment variables
 ENV PYTHONUNBUFFERED 1
 
-# Set the working directory in the Docker container to /app
-WORKDIR /app
-
-# Copy the current directory contents into the container at /app
-COPY . /app/
-
 # Install Chrome
 RUN apt-get update && \
     apt-get install -y wget unzip gnupg && \
@@ -28,5 +22,14 @@ RUN wget https://chromedriver.storage.googleapis.com/94.0.4606.41/chromedriver_l
     chown root:root /usr/bin/chromedriver && \
     chmod +x /usr/bin/chromedriver
 
+# Set the working directory in the Docker container to /app
+WORKDIR /app
+
+# Copy the requirements file into the container at /app
+COPY requirements.txt /app/
+
 # Install any needed packages specified in requirements.txt
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
+
+# Copy the current directory contents into the container at /app
+COPY . /app/
