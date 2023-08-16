@@ -17,56 +17,13 @@ cd selenium-chrome-extension-testing
 
 This command clones the project from GitHub and navigates into the project directory.
 
-## Docker Setup
-
-### Step 1: Create a docker-compose.yml File
-
-Create a docker-compose.yml file in the project root with the following content:
-
-```yaml
-version: '3'
-services:
-  web:
-    build: .
-    volumes:
-      - .:/app
-    depends_on:
-      - selenium
-
-  selenium:
-    image: selenium/standalone-chrome:latest
-    ports:
-      - "4444:4444"
-      - "7900:7900"
-```
-
-This configuration creates two services:
-
-- `web`: This is the application container where your Python Selenium tests will run.
-- `selenium`: This is the Selenium standalone Chrome server.
-
-### Step 2: Create a Dockerfile for the Python Environment
-
-Create a Dockerfile in the project root with the following content:
+## Usage
 
 ```
-FROM python:3.x
-
-WORKDIR /app
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . /app/
+docker-compose up --build -d
 ```
 
-This Dockerfile sets up a Python environment, installs the necessary dependencies, and copies your code into the container.
-
-### Step 3: Build and Run the Docker Compose Services
-
-```
-docker-compose up --build
-```
-
-This command builds the images (if they are not already built) and starts the services defined in docker-compose.yml.
+This command builds the images (if they are not already built) and starts the services defined in docker-compose.yml in the background.
 
 ### Step 4: Execute Your Test Script in the Python Container
 
