@@ -5,90 +5,84 @@ This guide will walk you through the steps necessary to test a locally-built Chr
 ## Prerequisites
 
 - Docker (latest version recommended)
+- Python 3.x
+- Git
 
-## Python Dependencies
+## Clone the Project
 
-Create a 'requirements.txt' file in your project directory with the following content:
+'''
+git clone https://github.com/turbo-src/selenium-chrome-extension-testing.git
+cd selenium-chrome-extension-testing
+'''
 
-```
-selenium==3.141.0
-```
+This command clones the project from GitHub and navigates into the project directory.
+
+## Setting Up a Virtual Environment
+
+### Step 1: Create a Virtual Environment
+
+'''
+python -m venv venv
+'''
+
+### Step 2: Activate the Virtual Environment
+
+'''
+source venv/bin/activate
+'''
+
+After running this command, your shell prompt should change to show the name of the activated environment.
+
+### Step 3: Install Python Dependencies
+
+'''
+pip install -r requirements.txt
+'''
+
+This command installs the required Python packages specified in `requirements.txt` into the virtual environment.
 
 ## Docker Setup
 
-### Step 1: Create a Dockerfile
+### Step 1: Start the Selenium Server
 
-First, create a file named 'Dockerfile' (without any file extension) in your project directory. Add the following content to this file:
+'''
+docker run -d -p 4444:4444 -p 7900:7900 --shm-size="2g" selenium/standalone-chrome:latest
+'''
 
-```
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+This command starts a new container with the Selenium standalone Chrome server.
 
-# Set the maintainer label
-LABEL maintainer="your-email@example.com"
+### Step 2: Run Your Test Script
 
-# Set environment variables
-ENV PYTHONUNBUFFERED 1
+With the Selenium server running in Docker and your Python virtual environment activated, you can now run your test script:
 
-# Set the working directory in the Docker container to /app
-WORKDIR /app
+'''
+python test_selenium.py
+'''
 
-# Copy the current directory contents into the container at /app
-COPY . /app/
+## Deactivating the Virtual Environment
 
-# Install Chrome
-RUN apt-get update && \
-    apt-get install -y wget unzip && \
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' && \
-    apt-get update && \
-    apt-get install -y google-chrome-stable
+When you are done, you can deactivate the virtual environment:
 
-# Install ChromeDriver
-RUN wget https://chromedriver.storage.googleapis.com/94.0.4606.41/chromedriver_linux64.zip && \
-    unzip chromedriver_linux64.zip && \
-    mv chromedriver /usr/bin/chromedriver && \
-    chown root:root /usr/bin/chromedriver && \
-    chmod +x /usr/bin/chromedriver
+'''
+deactivate
+'''
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --trusted-host pypi.python.org -r requirements.txt
-```
-
-### Step 2: Build the Docker Image:
-
-```
-docker build -t chrome-extension-test .
-```
-
-This command builds a new Docker image using the Dockerfile in the current directory and tags it as 'chrome-extension-test'.
-
-### Step 3: Run the Docker Container:
-
-```
-docker run -it --rm --name running-test chrome-extension-test
-```
-
-This command starts a new container named 'running-test' from the 'chrome-extension-test' image. The '-it' flags make it interactive, and '--rm' ensures the container is removed after it exits.
-
-### Step 4: Execute Your Tests:
-
-Once the container is up and running, your tests should automatically begin executing if they are set up to run on container startup. Otherwise, you can execute a shell in the running container:
-
-```
-docker exec -it running-test bash
-```
-
-And then manually run your tests from within the container's shell.
+After running this command, the shell prompt will return to normal, indicating that the virtual environment is deactivated.
 
 ## Docker Cleanup (Optional)
 
-### Remove Docker Image:
+### Stop and Remove Docker Container
 
-```
-docker rmi chrome-extension-test
-```
+To stop the Selenium server running in the Docker container:
 
-This command removes the Docker image named 'chrome-extension-test'.
+'''
+docker stop $(docker ps -q -f ancestor=selenium/standalone-chrome:latest)
+'''
 
-Now your README includes instructions on how to set up and run your testing environment using Docker. Note that users may need to install Docker on their systems to follow these instructions.
+### Remove Docker Image (Optional)
+
+'''
+docker rmi selenium/standalone-chrome:latest
+'''
+
+This command removes the Docker image named 'selenium/standalone-chrome:latest'.
