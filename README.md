@@ -25,11 +25,12 @@ docker-compose up --build -d
 
 This command builds the images (if they are not already built) and starts the services defined in docker-compose.yml in the background.
 
-### Step 4: Execute Your Test Script in the Python Container
 
 ```
 docker-compose exec web python test_selenium.py
 ```
+
+Executes your test script in the python container.
 
 ## Docker Cleanup (Optional)
 
