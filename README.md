@@ -1,93 +1,94 @@
 # Testing a Chrome Extension with Selenium in Python
 
-This guide will walk you through the steps necessary to test a locally-built Chrome extension using Selenium in Python.
+This guide will walk you through the steps necessary to test a locally-built Chrome extension using Selenium in Python with Docker.
 
 ## Prerequisites
 
-- Python (3.x recommended)
-- Chrome browser
+- Docker (latest version recommended)
 
 ## Python Dependencies
 
-The following Python packages are required:
-
-- Selenium
-
-To install these dependencies, create a 'requirements.txt' file in your project directory with the following content:
+Create a 'requirements.txt' file in your project directory with the following content:
 
 ```
 selenium==3.141.0
 ```
 
-Then, you can install these dependencies with pip:
+## Docker Setup
+
+### Step 1: Create a Dockerfile
+
+First, create a file named 'Dockerfile' (without any file extension) in your project directory. Add the following content to this file:
 
 ```
-pip install -r requirements.txt
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
+
+# Set the maintainer label
+LABEL maintainer="your-email@example.com"
+
+# Set environment variables
+ENV PYTHONUNBUFFERED 1
+
+# Set the working directory in the Docker container to /app
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY . /app/
+
+# Install Chrome
+RUN apt-get update && \
+    apt-get install -y wget unzip && \
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' && \
+    apt-get update && \
+    apt-get install -y google-chrome-stable
+
+# Install ChromeDriver
+RUN wget https://chromedriver.storage.googleapis.com/94.0.4606.41/chromedriver_linux64.zip && \
+    unzip chromedriver_linux64.zip && \
+    mv chromedriver /usr/bin/chromedriver && \
+    chown root:root /usr/bin/chromedriver && \
+    chmod +x /usr/bin/chromedriver
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --trusted-host pypi.python.org -r requirements.txt
 ```
 
-## Testing the Extension
-
-Here are the steps you need to follow to test your Chrome extension.
-
-1. **Load the Chrome Extension Locally**
-
-Begin by loading your locally built extension into Chrome. You can do this by opening Chrome and navigating to 'chrome://extensions/'. Make sure that the "Developer mode" toggle in the top-right corner is enabled, then click "Load unpacked". From here, navigate to the directory containing your extension's files and select it.
-
-2. **Find the Extension ID**
-
-After your extension is loaded in Chrome, you'll see its unique ID on the 'chrome://extensions/' page. Take note of this ID.
-
-3. **Identify the Page to be Tested**
-
-Determine which page of your extension you wish to test. If you're uncertain, inspect your extension's source files. You'll likely be testing a popup or options page, such as 'popup.html' or 'options.html'.
-
-4. **Initiate Selenium Script to Create a New WebDriver Instance with the Loaded Extension**
-
-Here is how to instantiate a new WebDriver instance with your loaded extension using Python's selenium bindings:
+### Step 2: Build the Docker Image:
 
 ```
-from selenium import webdriver
-
-options = webdriver.ChromeOptions()
-options.add_argument('load-extension=/path/to/extension/')
-
-driver = webdriver.Chrome(options=options)
+docker build -t chrome-extension-test .
 ```
 
-Replace '/path/to/extension/' with the path to your extension's directory in the above example.
+This command builds a new Docker image using the Dockerfile in the current directory and tags it as 'chrome-extension-test'.
 
-5. **Navigate to the Extension's Page to be Tested**
-
-With the WebDriver instance set up and the extension loaded, you can now navigate to the extension's page using its unique URL. The URL should follow this format: 'chrome-extension://UNIQUEID/PAGE.html'. You can do this with the 'get' method:
+### Step 3: Run the Docker Container:
 
 ```
-driver.get('chrome-extension://UNIQUEID/PAGE.html')
+docker run -it --rm --name running-test chrome-extension-test
 ```
 
-Replace 'UNIQUEID' with your extension's ID and 'PAGE.html' with the page you want to test.
+This command starts a new container named 'running-test' from the 'chrome-extension-test' image. The '-it' flags make it interactive, and '--rm' ensures the container is removed after it exits.
 
-6. **Interact with Elements and Send Keystrokes**
+### Step 4: Execute Your Tests:
 
-You can use the 'find_element_by_' methods to locate webpage elements based on their attributes, such as ID, name, class name, or CSS selector. Then you can interact with these elements, for example by sending keystrokes or clicking on them.
-
-To send keystrokes, you can use the 'send_keys' method:
+Once the container is up and running, your tests should automatically begin executing if they are set up to run on container startup. Otherwise, you can execute a shell in the running container:
 
 ```
-element = driver.find_element_by_id("element_id")
-element.send_keys("Some text")
+docker exec -it running-test bash
 ```
 
-To click an element, you can use the 'click' method:
+And then manually run your tests from within the container's shell.
+
+## Docker Cleanup (Optional)
+
+### Remove Docker Image:
 
 ```
-element = driver.find_element_by_id("button_id")
-element.click()
+docker rmi chrome-extension-test
 ```
 
-If your extension's page includes an iframe, you might need to switch the WebDriver's focus to the iframe before interacting with its elements. You can use the 'switch_to.frame()' method in Python to do this.
+This command removes the Docker image named 'chrome-extension-test'.
 
-7. **Perform Your Tests**
-
-Now you can interact with and test your extension's page as you would a regular webpage. For example, you can find elements, send keystrokes, click on elements, and so forth.
-
-Though testing a Chrome extension with Selenium may be a bit different than testing a typical webpage, this guide should help you get started with this process.
+Now your README includes instructions on how to set up and run your testing environment using Docker. Note that users may need to install Docker on their systems to follow these instructions.
