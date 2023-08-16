@@ -17,113 +17,69 @@ cd selenium-chrome-extension-testing
 
 This command clones the project from GitHub and navigates into the project directory.
 
-## Setting Up a Virtual Environment
-
-### Step 1: Create a Virtual Environment
-
-```
-python -m venv venv
-```
-
-### Step 2: Activate the Virtual Environment
-
-```
-source venv/bin/activate
-```
-
-After running this command, your shell prompt should change to show the name of the activated environment.
-
-### Step 3: Install Python Dependencies
-
-```
-pip install -r requirements.txt
-```
-
-This command installs the required Python packages specified in `requirements.txt` into the virtual environment.
-
-## Testing the Extension
-
-Follow these steps to test your Chrome extension:
-
-1. **Load the Chrome Extension Locally**
-   - Begin by loading your locally built extension into Chrome. Navigate to 'chrome://extensions/'. Ensure the "Developer mode" toggle in the top-right corner is enabled, then click "Load unpacked". From here, navigate to the directory containing your extension's files and select it.
-
-2. **Find the Extension ID**
-   - After your extension is loaded in Chrome, note its unique ID on the 'chrome://extensions/' page.
-
-3. **Identify the Page to be Tested**
-   - Determine which page of your extension you wish to test, such as 'popup.html' or 'options.html'.
-
-4. **Initiate Selenium Script to Create a New WebDriver Instance with the Loaded Extension**
-
-```
-from selenium import webdriver
-
-options = webdriver.ChromeOptions()
-options.add_argument('load-extension=/path/to/extension/')
-
-driver = webdriver.Chrome(options=options)
-```
-
-Replace `/path/to/extension/` with the path to your extension's directory.
-
-5. **Navigate to the Extension's Page to be Tested**
-
-```
-driver.get('chrome-extension://UNIQUEID/PAGE.html')
-```
-
-Replace `UNIQUEID` with your extension's ID and `PAGE.html` with the page you want to test.
-
-6. **Interact with Elements and Send Keystrokes**
-
-```
-element = driver.find_element_by_id("element_id")
-element.send_keys("Some text")
-```
-
-```
-element = driver.find_element_by_id("button_id")
-element.click()
-```
-
-7. **Perform Your Tests**
-   - Now you can interact with and test your extension's page as you would a regular webpage.
-
 ## Docker Setup
 
-### Step 1: Start the Selenium Server
+### Step 1: Create a docker-compose.yml File
 
-```
-docker run -d -p 4444:4444 -p 7900:7900 --shm-size="2g" selenium/standalone-chrome:latest
-```
+Create a docker-compose.yml file in the project root with the following content:
 
-This command starts a new container with the Selenium standalone Chrome server.
+```yaml
+version: '3'
+services:
+  web:
+    build: .
+    volumes:
+      - .:/app
+    depends_on:
+      - selenium
 
-### Step 2: Run Your Test Script
-
-With the Selenium server running in Docker and your Python virtual environment activated, you can now run your test script:
-
-```
-python test_selenium.py
-```
-
-## Deactivating the Virtual Environment
-
-When you are done, you can deactivate the virtual environment:
-
-```
-deactivate
+  selenium:
+    image: selenium/standalone-chrome:latest
+    ports:
+      - "4444:4444"
+      - "7900:7900"
 ```
 
-After running this command, the shell prompt will return to normal.
+This configuration creates two services:
+
+- `web`: This is the application container where your Python Selenium tests will run.
+- `selenium`: This is the Selenium standalone Chrome server.
+
+### Step 2: Create a Dockerfile for the Python Environment
+
+Create a Dockerfile in the project root with the following content:
+
+```
+FROM python:3.x
+
+WORKDIR /app
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . /app/
+```
+
+This Dockerfile sets up a Python environment, installs the necessary dependencies, and copies your code into the container.
+
+### Step 3: Build and Run the Docker Compose Services
+
+```
+docker-compose up --build
+```
+
+This command builds the images (if they are not already built) and starts the services defined in docker-compose.yml.
+
+### Step 4: Execute Your Test Script in the Python Container
+
+```
+docker-compose exec web python test_selenium.py
+```
 
 ## Docker Cleanup (Optional)
 
-### Stop and Remove Docker Container
+### Stop and Remove Docker Compose Services
 
 ```
-docker stop $(docker ps -q -f ancestor=selenium/standalone-chrome:latest)
+docker-compose down
 ```
 
 ### Remove Docker Image (Optional)
@@ -134,16 +90,18 @@ docker rmi selenium/standalone-chrome:latest
 
 This command removes the Docker image named `selenium/standalone-chrome:latest`.
 
-### test_selenium.py
+## test_selenium.py
 
 Here is a non-extension based test to help you orient yourself.
 
-```
+```python
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
-driver = webdriver.Remote("http://localhost:4444/wd/hub", DesiredCapabilities.CHROME)
+driver = webdriver.Remote("http://selenium:4444/wd/hub", DesiredCapabilities.CHROME)
 
 driver.get("https://www.python.org")
 print(driver.title)
 ```
+
+Note: In the docker-compose.yml, we defined a service named `selenium`, so in the Python Selenium script, we use `http://selenium:4444/wd/hub` as the Selenium server URL.
