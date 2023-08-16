@@ -85,4 +85,4 @@ docker stop $(docker ps -q -f ancestor=selenium/standalone-chrome:latest)
 docker rmi selenium/standalone-chrome:latest
 ```
 
-This command removes the Docker image named 'selenium/standalone-chrome:latest'.
+This command removes the Docker image named `selenium/standalone-chrome:latest`.
